@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stop</title>
+<style>
+:root{
+  --bg:#eceff1;--navy:#0f1c26;--ink:#16293a;--muted:#6f8190;--panel:#fff;--line:#dde4e7;
+  --water:#bfdfeb;--land:#f6f7f4;--park:#dfeada;--ok:#12855a;--warn:#df7430;--blue:#0d7fca;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,sans-serif}
+button,input{font:inherit}button{cursor:pointer}
+.top{height:58px;background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;gap:10px;align-items:center;font-size:13px;font-weight:900;letter-spacing:.12em}
+.logo{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#0d8973;font-size:11px}
+.feed{display:flex;gap:8px;align-items:center;font-size:12px;font-weight:700;color:#cfdce4}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px #12855a22}
+.dot.bad{background:var(--warn);box-shadow:0 0 0 4px #df743022}
+.layout{height:calc(100vh - 58px);padding:12px;display:grid;grid-template-columns:232px minmax(0,1fr) 320px;gap:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px #0f1c2610;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.head{padding:13px 14px;border-bottom:1px solid var(--line)}
+h2{font-size:14px;margin:0;font-weight:900}
+.sub{font-size:11px;color:var(--muted);margin:5px 0 0;line-height:1.45}
+.body{padding:12px;overflow:auto;flex:1;min-height:0}
+.group{margin-bottom:14px}
+.group-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;color:#51646f;font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+.small-actions{display:flex;gap:4px}
+.small-actions button,.tool,.mapbtn{border:1px solid var(--line);background:#f7f9f9;color:#4f6370;border-radius:6px;font-size:10px;font-weight:800;padding:4px 7px}
+.small-actions button:hover{background:#edf3f1}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:8px;padding:5px 8px;font-size:11px;font-weight:900;opacity:.45}
+.chip.on{opacity:1;color:#fff;border-color:var(--c);background:var(--c)}
+.chip:focus-visible{outline:3px solid #0d7fca55;outline-offset:2px}
+.map-panel{position:relative;overflow:hidden;background:#d7e9f0;display:block}
+.map{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none;display:block}
+.map.drag{cursor:grabbing}
+.city{fill:var(--land);stroke:#c4d1d3;stroke-width:1;vector-effect:non-scaling-stroke}
+.park{fill:var(--park)}
+.lake{fill:var(--water)}
+.river{fill:none;stroke:var(--water);stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.route-case{fill:none;stroke:#fff;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;opacity:.7}
+.route{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;opacity:.78}
+.station{fill:#fff;stroke:#536a78;vector-effect:non-scaling-stroke}
+.hub{fill:#14293a;stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke}
+.label{fill:#243b4b;font-weight:900;paint-order:stroke;stroke:#fff;stroke-width:5px;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}
+.station-label-bg{fill:#ffffffee;stroke:#c7d3d8;stroke-width:1;vector-effect:non-scaling-stroke;pointer-events:none}
+.district{fill:#8598a3;font-weight:800;letter-spacing:.12em;text-transform:uppercase;paint-order:stroke;stroke:#fff;stroke-width:3px;pointer-events:none}
+.train{cursor:pointer}
+.train text{fill:#fff;font-size:9px;font-weight:900;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.train .body{stroke:#fff;stroke-width:2}
+.train .halo{fill:none;stroke:#0d7fca;stroke-width:2.5}
+.train .late{fill:var(--warn);stroke:#fff;stroke-width:1}
+.toolbar{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:5px}
+.tool{width:32px;height:32px;padding:0;background:#fffffff2;color:var(--ink);font-size:15px;box-shadow:0 3px 10px #0f1c2618}
+.status{position:absolute;left:12px;top:12px;background:#fffffff2;border:1px solid #0f1c261f;border-radius:9px;padding:7px 10px;font-size:11px;font-weight:800;box-shadow:0 3px 10px #0f1c2618;display:flex;gap:7px;align-items:center}
+.mapbtns{position:absolute;left:12px;top:52px;display:flex;gap:5px}
+.mapbtn{background:#fffffff2;box-shadow:0 3px 10px #0f1c2618;padding:6px 9px}
+.legend{position:absolute;left:12px;bottom:12px;background:#fffffff2;border:1px solid #0f1c261f;border-radius:9px;padding:8px 10px;display:flex;gap:10px;flex-wrap:wrap;font-size:10px;font-weight:800;color:#51646f}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ok);margin-right:4px}
+.legend i.warn{background:var(--warn)}
+.zoomlabel{position:absolute;right:12px;bottom:12px;background:#fffffff2;border:1px solid #0f1c261f;border-radius:9px;padding:6px 9px;font-size:10px;font-weight:900;color:#51646f}
+.route.active{opacity:1!important;filter:drop-shadow(0 0 3px rgba(0,0,0,.35))}
+.route.dimmed,.route-case.dimmed{opacity:.12}
+.stopover-mark{fill:#fff;stroke:#0f1c26;stroke-width:2}
+.disruption-bar{display:flex;gap:10px;align-items:flex-start;background:#fff4e2;border-bottom:1px solid #f0c98a;padding:9px 16px;position:relative}
+.disruption-bar.hidden{display:none}
+.db-icon{font-size:15px;line-height:1.4;color:var(--warn)}
+.db-content{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;max-height:96px;overflow:auto}
+.db-item{font-size:11.5px;line-height:1.4;color:#5b3f10}
+.db-item b{color:#3a2707;margin-right:5px}
+.db-empty{font-size:11px;color:#8a6a2e}
+.db-actions{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.db-close{border:0;background:transparent;color:#8a6a2e;font-size:16px;font-weight:900;cursor:pointer;line-height:1;padding:0 2px}
+.db-refresh{font-size:9px;color:#8a6a2e;font-weight:800;white-space:nowrap}
+.trajectory{margin-top:10px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.trajectory-row{display:flex;align-items:center;gap:8px;padding:6px 9px;font-size:11px;border-bottom:1px solid #eef2f3;background:#fff}
+.trajectory-row:last-child{border-bottom:0}
+.trajectory-row.current{background:#edf6f3;font-weight:800}
+.trajectory-dot{width:7px;height:7px;border-radius:50%;background:#c3cdd2;flex:none}
+.trajectory-row.current .trajectory-dot{background:var(--ok)}
+.trajectory-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trajectory-eta{font-size:10px;font-weight:800;color:var(--muted);white-space:nowrap}
+.trajectory-eta.late{color:var(--warn)}
+.search{width:100%;height:34px;border:1px solid var(--line);border-radius:8px;background:#f8faf9;padding:0 10px;outline:0;font-size:12px;margin-top:10px}
+.search:focus{border-color:var(--blue);box-shadow:0 0 0 3px #0d7fca22}
+.train-list{overflow:auto;flex:1;min-height:120px}
+.train-row{display:grid;grid-template-columns:42px 1fr auto;gap:9px;align-items:center;border:0;border-bottom:1px solid #eef2f3;background:#fff;width:100%;padding:9px 12px;text-align:left}
+.train-row:hover,.train-row.selected{background:#edf6f3}
+.badge{height:24px;border-radius:6px;display:grid;place-items:center;color:#fff;background:var(--c);font-size:10px;font-weight:900}
+.train-row b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.train-row small{display:block;margin-top:3px;color:var(--muted);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eta{font-size:10px;font-weight:900;color:var(--ok);white-space:nowrap}
+.eta.late{color:var(--warn)}
+.empty{padding:18px 14px;color:var(--muted);font-size:11px}
+.detail{border-top:1px solid var(--line);padding:12px;background:#fbfcfc}
+.detail h3{margin:0;font-size:13px;display:flex;gap:7px;align-items:center}
+.detail p{margin:8px 0 0;color:var(--muted);font-size:11px;line-height:1.5}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.kv div{border:1px solid var(--line);background:#fff;border-radius:7px;padding:7px}
+.kv span{display:block;color:var(--muted);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.kv b{display:block;margin-top:3px;font-size:11px}
+.footer{padding:9px 12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:10px}
+.footer a,.footer button{color:var(--ink);font-weight:800;text-decoration:none;border:0;background:transparent;padding:0;font-size:10px}
+@media(max-width:1150px){.layout{grid-template-columns:210px 1fr;grid-template-rows:minmax(460px,1fr) auto;height:auto}.trains{grid-column:1/-1}}
+@media(max-width:720px){.layout{display:block;height:auto;padding:8px}.panel{margin-bottom:9px}.map-panel{height:66vh;min-height:400px}.train-list{max-height:300px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo">S</span> STOP</div>
+  <div class="feed"><span class="dot" id="feedDot"></span><span id="feedText">connecting…</span></div>
+</header>
+<div class="disruption-bar" id="disruptionBar">
+  <span class="db-icon">⚠</span>
+  <div class="db-content" id="disruptionContent"><div class="db-empty">Checking for service disruptions…</div></div>
+  <div class="db-actions">
+    <button class="db-close" id="disruptionClose" title="Dismiss" aria-label="Dismiss disruption notice">×</button>
+    <span class="db-refresh" id="disruptionRefresh">—</span>
+  </div>
+</div>
+<main class="layout">
+  <section class="panel">
+    <div class="head"><h2>Lines</h2><p class="sub">Only selected lines are drawn — keeps the map readable.</p></div>
+    <div class="body" id="lineBox"></div>
+    <div class="footer"><span id="lineCount">—</span><a href="https://www.vbb.de/fahrinfo/" target="_blank" rel="noopener">VBB ↗</a></div>
+  </section>
+
+  <section class="panel map-panel">
+    <svg class="map" id="map" viewBox="0 0 1000 700" aria-label="Live Berlin rail map"></svg>
+    <div class="status"><span class="dot" id="mapDot"></span><span id="mapStatus">Loading live positions…</span></div>
+    <div class="mapbtns">
+      <button class="mapbtn" id="toggleNames">Station names</button>
+      <button class="mapbtn" id="toggleRoutes">Routes</button>
+    </div>
+    <div class="toolbar">
+      <button class="tool" id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+      <button class="tool" id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+      <button class="tool" id="reset" title="Reset view" aria-label="Reset view">⤾</button>
+    </div>
+    <div class="legend"><span><i></i>on time</span><span><i class="warn"></i>delayed</span><span>Click a train for next stop &amp; ETA</span></div>
+    <div class="zoomlabel" id="zoomLabel">1.0×</div>
+  </section>
+
+  <section class="panel trains">
+    <div class="head"><h2>Live trains</h2><p class="sub" id="trainSub">—</p>
+      <input class="search" id="search" placeholder="Filter by line or destination" aria-label="Filter trains"></div>
+    <div class="train-list" id="trainList"></div>
+    <div class="detail" id="detail"><p>Click a train on the map or in the list to see its next station and ETA.</p></div>
+    <div class="footer"><span id="updated">—</span><button id="refresh">Refresh now</button></div>
+  </section>
+</main>
+<script>
+(()=>{
+'use strict';
+const REFRESH_MS=15000;
+const DISRUPT_REFRESH_MS=90000;
+/* Primary + fallback hosts: v6.vbb.transport.rest has had intermittent outages (upstream HAFAS 502/503).
+   v6.bvg.transport.rest wraps the same underlying VBB/BVG realtime data, so it's a safe fallback. */
+const RADAR_HOSTS=['https://v6.vbb.transport.rest','https://v6.bvg.transport.rest'];
+const RADAR_QS='radar?north=52.72&west=13.05&south=52.32&east=13.80&results=300&frames=1&polylines=false';
+let activeHost=0;
+/* Use the same host selection for all realtime/network calls so a VBB outage does not disable routes,
+   station labels, disruption notices, or trajectories while the BVG mirror is available. */
+async function fetchApi(path,options={}){
+  let lastErr=null;
+  for(let attempt=0;attempt<RADAR_HOSTS.length;attempt++){
+    const hostIdx=(activeHost+attempt)%RADAR_HOSTS.length;
+    try{
+      const r=await fetch(RADAR_HOSTS[hostIdx]+'/'+String(path).replace(/^\//,''),{cache:'no-store',...options});
+      if(!r.ok)throw new Error('http '+r.status);
+      activeHost=hostIdx;
+      return r;
+    }catch(e){lastErr=e}
+  }
+  throw lastErr||new Error('API unavailable');
+}
+/* hub stops used to aggregate service disruptions/remarks (departures endpoint returns `remarks`) */
+const DISRUPT_STOPS=[
+ {id:'900100003',name:'S+U Alexanderplatz'},{id:'900003201',name:'Berlin Hauptbahnhof'},
+ {id:'900023201',name:'S+U Zoologischer Garten'},{id:'900120005',name:'S+U Ostkreuz'},
+ {id:'900058101',name:'S+U Südkreuz'},{id:'900024101',name:'S+U Gesundbrunnen'},
+ {id:'900053301',name:'S+U Spandau'},{id:'900131025',name:'S+U Hermannstr.'}
+];
+
+/* ---------- projection: real lat/lon -> 1000x700 with latitude correction ---------- */
+const B={w:13.02,e:13.82,s:52.30,n:52.70};
+const K=Math.cos(52.51*Math.PI/180);
+const spanX=(B.e-B.w)*K, spanY=(B.n-B.s);
+const scale=Math.min(1000/spanX,700/spanY)*0.96;
+const offX=(1000-spanX*scale)/2, offY=(700-spanY*scale)/2;
+const xy=(lat,lon)=>[offX+(lon-B.w)*K*scale, offY+(B.n-lat)*scale];
+
+/* ---------- geography (approximate real coordinates, extended for full city coverage) ---------- */
+const BORDER=[[52.6395,13.1600],[52.6300,13.2050],[52.6440,13.2550],[52.6520,13.2880],[52.6580,13.3350],[52.6600,13.4000],
+[52.6630,13.4550],[52.6580,13.4950],[52.6350,13.5300],[52.6100,13.5550],[52.5980,13.5770],[52.5750,13.5900],
+[52.5600,13.5880],[52.5450,13.6050],[52.5330,13.6230],[52.5150,13.6300],[52.5020,13.6400],[52.4850,13.6550],
+[52.4700,13.7000],[52.4550,13.7350],[52.4430,13.7620],[52.4250,13.7550],[52.4100,13.7200],[52.4000,13.6900],
+[52.3980,13.6600],[52.3900,13.6300],[52.3860,13.5900],[52.3720,13.5600],[52.3720,13.5100],[52.3660,13.4700],
+[52.3720,13.4400],[52.3600,13.4150],[52.3390,13.4020],[52.3350,13.4170],[52.3450,13.4400],[52.3600,13.4600],
+[52.3800,13.3900],[52.3920,13.3600],[52.3920,13.3300],[52.3940,13.3000],[52.3960,13.2700],[52.4050,13.2450],
+[52.4100,13.2100],[52.3940,13.1950],[52.3900,13.1600],[52.4050,13.1400],[52.4300,13.0940],[52.4500,13.0900],
+[52.4700,13.1080],[52.4900,13.0850],[52.5100,13.0900],[52.5300,13.0870],[52.5450,13.0950],[52.5520,13.1080],
+[52.5750,13.1180],[52.5900,13.1300],[52.6100,13.1400],[52.6250,13.1500]];
+const HAVEL=[[52.6390,13.2020],[52.6100,13.2020],[52.5980,13.2300],[52.5700,13.2160],[52.5450,13.2100],[52.5200,13.2000],
+[52.4950,13.1900],[52.4700,13.1850],[52.4480,13.1750],[52.4280,13.1650],[52.4120,13.1750],[52.3980,13.1850]];
+const SPREE=[[52.4300,13.6600],[52.4430,13.6120],[52.4520,13.5700],[52.4620,13.5300],[52.4780,13.4940],[52.4920,13.4620],
+[52.5060,13.4360],[52.5160,13.4040],[52.5220,13.3720],[52.5200,13.3400],[52.5260,13.3000],[52.5320,13.2540],[52.5360,13.2180]];
+const DAHME=[[52.2950,13.6350],[52.3200,13.6300],[52.3450,13.6000],[52.3700,13.5850],[52.3900,13.5900],[52.4000,13.5950]];
+const LANDWEHRKANAL=[[52.5000,13.4200],[52.4970,13.4000],[52.4940,13.3800],[52.4930,13.3600],[52.4960,13.3400],[52.4990,13.3200]];
+const LAKES=[
+ {n:'Müggelsee',p:[[52.448,13.618],[52.452,13.652],[52.444,13.672],[52.430,13.665],[52.426,13.636],[52.436,13.616]]},
+ {n:'Tegeler See',p:[[52.588,13.238],[52.596,13.262],[52.584,13.276],[52.570,13.262],[52.572,13.240]]},
+ {n:'Wannsee',p:[[52.436,13.160],[52.442,13.186],[52.424,13.196],[52.412,13.180],[52.420,13.160]]},
+ {n:'Großer Wannsee',p:[[52.418,13.155],[52.424,13.170],[52.410,13.178],[52.402,13.162],[52.408,13.150]]},
+ {n:'Krumme Lanke',p:[[52.452,13.240],[52.456,13.248],[52.450,13.252],[52.446,13.244]]},
+ {n:'Schlachtensee',p:[[52.434,13.203],[52.438,13.210],[52.433,13.214],[52.429,13.207]]},
+ {n:'Langer See',p:[[52.435,13.575],[52.442,13.590],[52.432,13.598],[52.424,13.585],[52.428,13.575]]},
+ {n:'Rummelsburger See',p:[[52.497,13.478],[52.502,13.486],[52.496,13.491],[52.491,13.483]]},
+ {n:'Flughafensee',p:[[52.550,13.280],[52.554,13.288],[52.548,13.292],[52.544,13.284]]},
+ {n:'Plötzensee',p:[[52.545,13.335],[52.548,13.340],[52.543,13.343],[52.540,13.337]]},
+ {n:'Groß Glienicker See',p:[[52.470,13.100],[52.475,13.108],[52.469,13.113],[52.464,13.105]]},
+ {n:'Weißer See',p:[[52.548,13.450],[52.551,13.456],[52.546,13.459],[52.543,13.453]]}
+];
+const PARKS=[
+ [[52.512,13.190],[52.508,13.255],[52.474,13.262],[52.452,13.240],[52.462,13.196],[52.492,13.178]],  /* Grunewald */
+ [[52.518,13.330],[52.520,13.375],[52.510,13.378],[52.508,13.332]],                                  /* Tiergarten */
+ [[52.482,13.394],[52.484,13.418],[52.470,13.420],[52.468,13.396]],                                  /* Tempelhofer Feld */
+ [[52.658,13.290],[52.652,13.340],[52.626,13.330],[52.630,13.286]],                                  /* Frohnau forest */
+ [[52.442,13.610],[52.436,13.646],[52.412,13.634],[52.418,13.600]],                                  /* Köpenick forest */
+ [[52.540,13.290],[52.536,13.315],[52.524,13.310],[52.528,13.288]],                                  /* Jungfernheide */
+ [[52.522,13.436],[52.526,13.460],[52.516,13.464],[52.512,13.440]],                                  /* Volkspark Friedrichshain */
+ [[52.480,13.418],[52.484,13.428],[52.474,13.432],[52.470,13.422]],                                  /* Hasenheide */
+ [[52.442,13.442],[52.448,13.456],[52.436,13.462],[52.430,13.448]],                                  /* Britzer Garten */
+ [[52.550,13.335],[52.556,13.352],[52.544,13.358],[52.538,13.340]],                                  /* Volkspark Rehberge */
+ [[52.600,13.180],[52.590,13.220],[52.560,13.210],[52.568,13.170]],                                  /* Spandauer Forst */
+ [[52.430,13.170],[52.420,13.210],[52.395,13.200],[52.400,13.160]],                                  /* Düppel forest */
+ [[52.478,13.535],[52.470,13.560],[52.450,13.550],[52.458,13.520]],                                  /* Wuhlheide forest */
+ [[52.545,13.590],[52.540,13.620],[52.520,13.610],[52.525,13.585]]                                   /* Hellersdorf/Kaulsdorf green belt */
+];
+const DISTRICTS=[
+ ['Spandau',52.560,13.155],['Reinickendorf',52.605,13.325],['Pankow',52.615,13.450],['Mitte',52.524,13.400],
+ ['Friedrichshain-\nKreuzberg',52.495,13.445],['Charlottenburg-\nWilmersdorf',52.505,13.280],
+ ['Marzahn-\nHellersdorf',52.540,13.580],['Lichtenberg',52.520,13.495],['Treptow-\nKöpenick',52.440,13.600],
+ ['Neukölln',52.450,13.460],['Tempelhof-\nSchöneberg',52.460,13.370],['Steglitz-\nZehlendorf',52.435,13.270]
+];
+
+/* ---------- major streets (approximate real routes for visual context) ---------- */
+const STREETS=[
+ {n:'Str. des 17. Juni / Unter den Linden',w:2.6,p:[[52.5145,13.2900],[52.5147,13.3200],[52.5150,13.3369],[52.5163,13.3600],[52.5170,13.3880],[52.5175,13.4000],[52.5175,13.4130]]},
+ {n:'Kurfürstendamm / Tauentzienstr.',w:2.4,p:[[52.5015,13.2870],[52.5030,13.3050],[52.5030,13.3200],[52.5025,13.3320],[52.5017,13.3420]]},
+ {n:'Karl-Marx-Allee',w:2.2,p:[[52.5175,13.4130],[52.5165,13.4300],[52.5155,13.4450],[52.5135,13.4620]]},
+ {n:'Frankfurter Allee',w:2.0,p:[[52.5135,13.4620],[52.5150,13.4750],[52.5170,13.4900],[52.5200,13.5100]]},
+ {n:'Potsdamer Str.',w:2.0,p:[[52.5090,13.3760],[52.4980,13.3660],[52.4870,13.3580],[52.4760,13.3560],[52.4650,13.3560]]},
+ {n:'Hauptstr./Rheinstr.',w:1.8,p:[[52.4840,13.3430],[52.4770,13.3330],[52.4700,13.3280],[52.4620,13.3250]]},
+ {n:'Schloßstr.',w:1.8,p:[[52.4700,13.3280],[52.4620,13.3230],[52.4570,13.3230]]},
+ {n:'Berliner Str. (Charlottenburg-Steglitz)',w:1.8,p:[[52.5010,13.3050],[52.4920,13.3200],[52.4840,13.3300],[52.4770,13.3280],[52.4700,13.3260]]},
+ {n:'Müllerstr.',w:1.8,p:[[52.5470,13.3660],[52.5500,13.3600],[52.5540,13.3550],[52.5590,13.3480]]},
+ {n:'Turmstr./Alt-Moabit',w:1.8,p:[[52.5260,13.3420],[52.5240,13.3520],[52.5210,13.3620],[52.5175,13.3700]]},
+ {n:'Bismarckstr./Otto-Suhr-Allee',w:2.0,p:[[52.5170,13.2600],[52.5140,13.2850],[52.5120,13.3080],[52.5100,13.3220]]},
+ {n:'Landsberger Allee',w:1.8,p:[[52.5300,13.4130],[52.5320,13.4360],[52.5320,13.4540],[52.5330,13.4750]]},
+ {n:'Prenzlauer Allee',w:1.8,p:[[52.5290,13.4130],[52.5350,13.4200],[52.5420,13.4230],[52.5480,13.4200]]},
+ {n:'Schönhauser Allee',w:1.8,p:[[52.5290,13.4130],[52.5350,13.4110],[52.5420,13.4110],[52.5490,13.4130],[52.5560,13.4130]]},
+ {n:'Greifswalder Str.',w:1.6,p:[[52.5290,13.4200],[52.5300,13.4300],[52.5320,13.4400],[52.5340,13.4550]]},
+ {n:'Warschauer Str./Frankfurter Tor',w:1.8,p:[[52.5050,13.4490],[52.5090,13.4530],[52.5140,13.4540]]},
+ {n:'Sonnenallee',w:1.8,p:[[52.4870,13.4240],[52.4770,13.4380],[52.4650,13.4550],[52.4560,13.4670]]},
+ {n:'Karl-Marx-Str. (Neukölln)',w:1.8,p:[[52.4870,13.4240],[52.4790,13.4360],[52.4700,13.4400]]},
+ {n:'Tempelhofer Damm/Mariendorfer Damm',w:1.8,p:[[52.4710,13.3860],[52.4600,13.3860],[52.4480,13.3860],[52.4380,13.3860]]},
+ {n:'Hermannstr.',w:1.8,p:[[52.4870,13.4270],[52.4780,13.4310],[52.4670,13.4310]]},
+ {n:'Spandauer Damm/Heerstr.',w:2.0,p:[[52.5170,13.2650],[52.5230,13.2450],[52.5260,13.2050],[52.5270,13.1700]]},
+ {n:'Falkenseer Chaussee',w:1.6,p:[[52.5400,13.2000],[52.5480,13.1600],[52.5550,13.1200]]},
+ {n:'Reinickendorfer Str./Residenzstr.',w:1.6,p:[[52.5470,13.3670],[52.5600,13.3600],[52.5750,13.3400],[52.5900,13.3250]]},
+ {n:'Alt-Tegel/Tegeler Str.',w:1.6,p:[[52.5900,13.3250],[52.5850,13.3000],[52.5850,13.2830]]},
+ {n:'Wilhelmstr./Chausseestr.',w:1.6,p:[[52.5175,13.3820],[52.5250,13.3830],[52.5350,13.3830]]},
+ {n:'Grunewaldstr./Hauptstr. (Schöneberg)',w:1.6,p:[[52.4900,13.3540],[52.4880,13.3480],[52.4840,13.3440]]},
+ {n:'Yorckstr./Gneisenaustr.',w:1.6,p:[[52.4920,13.3730],[52.4900,13.3850],[52.4890,13.3960]]},
+ {n:'Adlergestell',w:1.8,p:[[52.4200,13.5750],[52.4350,13.5600],[52.4550,13.5350],[52.4700,13.5100]]},
+ {n:'Köpenicker Landstr./Alt-Köpenick',w:1.6,p:[[52.4580,13.5770],[52.4650,13.5500],[52.4700,13.5200]]},
+ {n:'Wuhlheide/Rummelsburger Landstr.',w:1.4,p:[[52.4740,13.5410],[52.4880,13.5150],[52.4980,13.4900]]},
+ {n:'Neuköllner Str./Britzer Damm',w:1.6,p:[[52.4560,13.4590],[52.4450,13.4560],[52.4360,13.4520]]},
+ {n:'Hellersdorfer Str./Alt-Hellersdorf',w:1.4,p:[[52.5270,13.6050],[52.5350,13.5900],[52.5400,13.5700]]},
+ {n:'Ahrensfelder Chaussee',w:1.4,p:[[52.5710,13.5690],[52.5600,13.5500],[52.5500,13.5300]]},
+ {n:'Nauener Str. (Spandau-Falkensee)',w:1.4,p:[[52.5610,13.0930],[52.5600,13.1200],[52.5550,13.1400]]},
+ {n:'Potsdamer Chaussee',w:1.6,p:[[52.4400,13.2000],[52.4300,13.1700],[52.4200,13.1300],[52.4100,13.1000]]},
+ {n:'Königstr. (Wannsee)',w:1.4,p:[[52.4210,13.1790],[52.4280,13.1900],[52.4360,13.2000]]}
+];
+
+/* ---------- lines ---------- */
+const colors={U1:'#7dad3f',U2:'#da3d2b',U3:'#16825c',U4:'#e0c81a',U5:'#7b5334',U6:'#8562a4',U7:'#009bd5',U8:'#0b5d9b',U9:'#ef811d',
+S1:'#d66ca4',S2:'#007d3d',S25:'#009252',S3:'#0069b4',S5:'#e16e17',S7:'#7755a3',S8:'#4aa347',S9:'#8d204a',S41:'#a4552f',S42:'#c46a2c',S45:'#c4962c',S46:'#b48b2a',S47:'#9d7a2b',S75:'#674a94',S85:'#459e50',
+RE1:'#d53b51',RE2:'#b83270',RE3:'#ee8b19',RE5:'#107cb9',RE7:'#7b3e98',RB10:'#c54d24',RB14:'#a96521',RB24:'#96542c'};
+
+const coords={
+'Rathaus Spandau':[52.535,13.2],'Spandau':[52.534,13.197],'Jungfernheide':[52.53,13.299],'Mierendorffplatz':[52.522,13.302],'Bismarckstr.':[52.512,13.308],'Adenauerplatz':[52.5,13.308],'Fehrbelliner Platz':[52.49,13.316],'Blissestr.':[52.488,13.325],'Bayerischer Platz':[52.489,13.34],'Kleistpark':[52.49,13.357],'Yorckstr.':[52.492,13.371],'Mehringdamm':[52.494,13.388],'Gneisenaustr.':[52.489,13.396],'Südstern':[52.488,13.41],'Hermannplatz':[52.487,13.424],'Rathaus Neukölln':[52.481,13.435],'Karl-Marx-Str.':[52.476,13.44],'Neukölln':[52.471,13.436],'Grenzallee':[52.464,13.447],'Blaschkoallee':[52.455,13.45],'Britz-Süd':[52.445,13.454],'Johannisthaler Chaussee':[52.432,13.464],'Zwickauer Damm':[52.423,13.478],'Rudow':[52.416,13.498],'Ruhleben':[52.526,13.24],'Olympia-Stadion':[52.517,13.25],'Theodor-Heuss-Platz':[52.507,13.274],'Kaiserdamm':[52.507,13.293],'Ernst-Reuter-Platz':[52.512,13.322],'Zoologischer Garten':[52.507,13.332],'Wittenbergplatz':[52.502,13.343],'Nollendorfplatz':[52.5,13.354],'Gleisdreieck':[52.499,13.375],'Potsdamer Platz':[52.51,13.376],'Mohrenstr.':[52.511,13.386],'Stadtmitte':[52.512,13.391],'Klosterstr.':[52.516,13.412],'Alexanderplatz':[52.522,13.413],'Rosa-Luxemburg-Platz':[52.528,13.411],'Senefelderplatz':[52.532,13.413],'Eberswalder Str.':[52.541,13.412],'Schönhauser Allee':[52.549,13.413],'Vinetastr.':[52.56,13.412],'Pankow':[52.568,13.411],'Uhlandstr.':[52.503,13.326],'Kurfürstendamm':[52.504,13.332],'Hallesches Tor':[52.498,13.391],'Kottbusser Tor':[52.499,13.418],'Görlitzer Bahnhof':[52.5,13.428],'Schlesisches Tor':[52.501,13.442],'Warschauer Str.':[52.505,13.449],'Krumme Lanke':[52.454,13.243],'Dahlem-Dorf':[52.458,13.288],'Breitenbachplatz':[52.465,13.298],'Heidelberger Platz':[52.478,13.311],'Hohenzollernplatz':[52.494,13.327],'Spichernstr.':[52.497,13.33],'Viktoria-Luise-Platz':[52.494,13.344],'Rathaus Schöneberg':[52.484,13.343],'Innsbrucker Platz':[52.478,13.34],'Hauptbahnhof':[52.525,13.369],'Brandenburger Tor':[52.516,13.38],'Unter den Linden':[52.517,13.388],'Museumsinsel':[52.517,13.398],'Frankfurter Tor':[52.516,13.454],'Samariterstr.':[52.516,13.465],'Lichtenberg':[52.51,13.478],'Tierpark':[52.499,13.532],'Biesdorf-Süd':[52.503,13.556],'Wuhletal':[52.513,13.576],'Kaulsdorf-Nord':[52.52,13.588],'Hellersdorf':[52.527,13.605],'Hönow':[52.537,13.622],'Alt-Tegel':[52.589,13.283],'Borsigwerke':[52.582,13.29],'Kurt-Schumacher-Platz':[52.559,13.305],'Leopoldplatz':[52.545,13.36],'Wedding':[52.547,13.366],'Reinickendorfer Str.':[52.541,13.367],'Naturkundemuseum':[52.529,13.382],'Friedrichstr.':[52.52,13.387],'Kochstr.':[52.505,13.39],'Platz der Luftbrücke':[52.484,13.389],'Paradestr.':[52.478,13.388],'Tempelhof':[52.471,13.386],'Alt-Tempelhof':[52.464,13.386],'Ullsteinstr.':[52.453,13.384],'Alt-Mariendorf':[52.438,13.386],'Wittenau':[52.597,13.327],'Rathaus Reinickendorf':[52.577,13.335],'Paracelsus-Bad':[52.57,13.347],'Osloer Str.':[52.559,13.373],'Pankstr.':[52.552,13.381],'Gesundbrunnen':[52.549,13.389],'Bernauer Str.':[52.537,13.398],'Rosenthaler Platz':[52.531,13.401],'Weinmeisterstr.':[52.524,13.405],'Jannowitzbrücke':[52.514,13.418],'Boddinstr.':[52.48,13.427],'Leinestr.':[52.472,13.429],'Hermannstr.':[52.467,13.431],'Turmstr.':[52.526,13.342],'Hansaplatz':[52.517,13.341],'Berliner Str.':[52.484,13.33],'Bundesplatz':[52.477,13.328],'Rathaus Steglitz':[52.457,13.322],'Oranienburg':[52.755,13.24],'Birkenwerder':[52.687,13.283],'Hohen Neuendorf':[52.667,13.283],'Frohnau':[52.633,13.29],'Wollankstr.':[52.564,13.383],'Nordbahnhof':[52.532,13.388],'Anhalter Bahnhof':[52.504,13.382],'Yorckstr. (S1)':[52.492,13.373],'Schöneberg':[52.478,13.353],'Südkreuz':[52.476,13.365],'Priesterweg':[52.462,13.359],'Lankwitz':[52.442,13.344],'Lichterfelde Ost':[52.431,13.33],'Teltow Stadt':[52.396,13.279],'Zehlendorf':[52.438,13.259],'Wannsee':[52.421,13.179],'Nikolassee':[52.428,13.201],'Grunewald':[52.483,13.258],'Westkreuz':[52.501,13.283],'Charlottenburg':[52.505,13.304],'Savignyplatz':[52.505,13.32],'Tiergarten':[52.514,13.336],'Bellevue':[52.52,13.348],'Ostkreuz':[52.503,13.469],'Ostbahnhof':[52.511,13.435],'Treptower Park':[52.494,13.461],'Plänterwald':[52.483,13.47],'Baumschulenweg':[52.47,13.485],'Schöneweide':[52.456,13.511],'Adlershof':[52.435,13.545],'Grünau':[52.418,13.573],'Flughafen BER':[52.366,13.51],'Waßmannsdorf':[52.377,13.47],'Bernau':[52.677,13.591],'Buch':[52.634,13.492],'Blankenburg':[52.594,13.446],'Blankenfelde':[52.335,13.417],'Hennigsdorf':[52.639,13.202],'Heiligensee':[52.607,13.229],'Tegel':[52.586,13.293],'Jungfernheide (S)':[52.53,13.3],'Beusselstr.':[52.534,13.324],'Westhafen':[52.536,13.343],'Wedding (S)':[52.548,13.366],'Humboldthain':[52.545,13.381],'Landsberger Allee':[52.527,13.454],'Storkower Str.':[52.518,13.462],'Frankfurter Allee':[52.513,13.475],'Prenzlauer Allee':[52.539,13.423],'Greifswalder Str.':[52.534,13.43],'Bornholmer Str.':[52.554,13.401],'Halensee':[52.494,13.294],'Hohenzollerndamm':[52.488,13.297],'Heidelberger Platz (S)':[52.478,13.311],'Bundesplatz (S)':[52.477,13.328],'Tempelhof (S)':[52.471,13.386],'Neukölln (S)':[52.471,13.436],'Köllnische Heide':[52.463,13.462],'Oberspree':[52.45,13.545],'Spindlersfeld':[52.445,13.557],'Köpenick':[52.458,13.577],'Erkner':[52.423,13.751],'Rahnsdorf':[52.433,13.694],'Wuhlheide':[52.474,13.541],'Wartenberg':[52.575,13.518],'Hohenschönhausen':[52.551,13.506],'Springpfuhl':[52.523,13.531],'Poelchaustr.':[52.535,13.539],'Marzahn':[52.544,13.545],'Ahrensfelde':[52.571,13.569],'Mahlsdorf':[52.511,13.614],'Kaulsdorf':[52.506,13.59],'Biesdorf':[52.51,13.564],'Strausberg':[52.579,13.887],'Potsdam Hbf':[52.392,13.067],'Griebnitzsee':[52.394,13.127],'Nauen':[52.607,12.876],'Falkensee':[52.561,13.093],'Königs Wusterhausen':[52.294,13.632],'Eberswalde':[52.836,13.81],'Jüterbog':[51.996,13.074],'Wittenberge':[52.994,11.755],'Wünsdorf-Waldstadt':[52.167,13.471],'Brandenburg Hbf':[52.412,12.55],'Frankfurt (Oder)':[52.331,14.55],'Cottbus':[51.754,14.324],'Wildau':[52.321,13.64],'Zoo (S)':[52.507,13.332],'Altstadt Spandau':[52.535,13.204],'Zitadelle':[52.535,13.213],'Haselhorst':[52.538,13.229],'Paulsternstr.':[52.535,13.245],'Rohrdamm':[52.533,13.264],'Siemensdamm':[52.535,13.281],'Halemweg':[52.533,13.293],'Jakob-Kaiser-Platz':[52.531,13.295],'Wilmersdorfer Str.':[52.501,13.305],'Konstanzer Str.':[52.495,13.312],'Eisenacher Str.':[52.485,13.348],'Möckernbrücke':[52.499,13.383],'Parchimer Allee':[52.449,13.452],'Lipschitzallee':[52.438,13.458],'Wutzkyallee':[52.43,13.469],'Schlachtensee':[52.436,13.207],'Mexikoplatz':[52.433,13.221],'Sundgauer Str.':[52.432,13.238],'Lichterfelde West':[52.427,13.271],'Botanischer Garten':[52.452,13.309],'Feuerbachstr.':[52.461,13.325],'Friedenau':[52.469,13.328],'Julius-Leber-Brücke':[52.487,13.362],'Oranienburger Str.':[52.525,13.394],'Schönholz':[52.578,13.365],'Wilhelmsruh':[52.586,13.354],'Waidmannslust':[52.606,13.312],'Hermsdorf':[52.617,13.301],'Borgsdorf':[52.698,13.273],'Lehnitz':[52.727,13.253]};
+
+const lines={
+U1:['Uhlandstr.','Kurfürstendamm','Wittenbergplatz','Nollendorfplatz','Gleisdreieck','Hallesches Tor','Kottbusser Tor','Görlitzer Bahnhof','Schlesisches Tor','Warschauer Str.'],
+U2:['Ruhleben','Olympia-Stadion','Theodor-Heuss-Platz','Kaiserdamm','Ernst-Reuter-Platz','Zoologischer Garten','Wittenbergplatz','Nollendorfplatz','Gleisdreieck','Potsdamer Platz','Mohrenstr.','Stadtmitte','Klosterstr.','Alexanderplatz','Rosa-Luxemburg-Platz','Senefelderplatz','Eberswalder Str.','Schönhauser Allee','Vinetastr.','Pankow'],
+U3:['Krumme Lanke','Dahlem-Dorf','Breitenbachplatz','Heidelberger Platz','Hohenzollernplatz','Spichernstr.','Wittenbergplatz','Nollendorfplatz'],
+U4:['Nollendorfplatz','Viktoria-Luise-Platz','Bayerischer Platz','Rathaus Schöneberg','Innsbrucker Platz'],
+U5:['Hauptbahnhof','Brandenburger Tor','Unter den Linden','Museumsinsel','Alexanderplatz','Frankfurter Tor','Samariterstr.','Lichtenberg','Tierpark','Biesdorf-Süd','Wuhletal','Kaulsdorf-Nord','Hellersdorf','Hönow'],
+U6:['Alt-Tegel','Borsigwerke','Kurt-Schumacher-Platz','Leopoldplatz','Reinickendorfer Str.','Naturkundemuseum','Friedrichstr.','Stadtmitte','Kochstr.','Mehringdamm','Platz der Luftbrücke','Paradestr.','Tempelhof','Alt-Tempelhof','Ullsteinstr.','Alt-Mariendorf'],
+U7:['Rathaus Spandau','Altstadt Spandau','Zitadelle','Haselhorst','Paulsternstr.','Rohrdamm','Siemensdamm','Halemweg','Jakob-Kaiser-Platz','Jungfernheide','Mierendorffplatz','Bismarckstr.','Wilmersdorfer Str.','Adenauerplatz','Konstanzer Str.','Fehrbelliner Platz','Blissestr.','Berliner Str.','Bayerischer Platz','Eisenacher Str.','Kleistpark','Yorckstr.','Möckernbrücke','Mehringdamm','Gneisenaustr.','Südstern','Hermannplatz','Rathaus Neukölln','Karl-Marx-Str.','Neukölln','Grenzallee','Blaschkoallee','Parchimer Allee','Britz-Süd','Johannisthaler Chaussee','Lipschitzallee','Wutzkyallee','Zwickauer Damm','Rudow'],
+U8:['Wittenau','Rathaus Reinickendorf','Paracelsus-Bad','Osloer Str.','Pankstr.','Gesundbrunnen','Bernauer Str.','Rosenthaler Platz','Weinmeisterstr.','Alexanderplatz','Jannowitzbrücke','Kottbusser Tor','Hermannplatz','Boddinstr.','Leinestr.','Hermannstr.'],
+U9:['Osloer Str.','Leopoldplatz','Turmstr.','Hansaplatz','Zoologischer Garten','Spichernstr.','Berliner Str.','Bundesplatz','Rathaus Steglitz'],
+S1:['Oranienburg','Lehnitz','Borgsdorf','Birkenwerder','Hohen Neuendorf','Frohnau','Hermsdorf','Waidmannslust','Wittenau','Wilhelmsruh','Schönholz','Wollankstr.','Bornholmer Str.','Gesundbrunnen','Humboldthain','Nordbahnhof','Oranienburger Str.','Friedrichstr.','Brandenburger Tor','Potsdamer Platz','Anhalter Bahnhof','Yorckstr. (S1)','Julius-Leber-Brücke','Schöneberg','Friedenau','Feuerbachstr.','Rathaus Steglitz','Botanischer Garten','Lichterfelde West','Sundgauer Str.','Zehlendorf','Mexikoplatz','Schlachtensee','Nikolassee','Wannsee'],
+S2:['Bernau','Buch','Blankenburg','Pankow','Bornholmer Str.','Gesundbrunnen','Nordbahnhof','Friedrichstr.','Potsdamer Platz','Südkreuz','Priesterweg','Lankwitz','Lichterfelde Ost','Blankenfelde'],
+S25:['Hennigsdorf','Heiligensee','Tegel','Wollankstr.','Gesundbrunnen','Friedrichstr.','Potsdamer Platz','Südkreuz','Lichterfelde Ost','Teltow Stadt'],
+S3:['Spandau','Westkreuz','Charlottenburg','Zoologischer Garten','Hauptbahnhof','Friedrichstr.','Alexanderplatz','Ostbahnhof','Ostkreuz','Wuhlheide','Köpenick','Rahnsdorf','Erkner'],
+S5:['Spandau','Westkreuz','Charlottenburg','Zoologischer Garten','Hauptbahnhof','Friedrichstr.','Alexanderplatz','Ostbahnhof','Ostkreuz','Lichtenberg','Biesdorf','Kaulsdorf','Mahlsdorf','Strausberg'],
+S7:['Potsdam Hbf','Griebnitzsee','Wannsee','Nikolassee','Grunewald','Westkreuz','Charlottenburg','Zoologischer Garten','Hauptbahnhof','Friedrichstr.','Alexanderplatz','Ostkreuz','Springpfuhl','Poelchaustr.','Marzahn','Ahrensfelde'],
+S8:['Hohen Neuendorf','Blankenburg','Pankow','Bornholmer Str.','Prenzlauer Allee','Landsberger Allee','Ostkreuz','Treptower Park','Schöneweide','Grünau','Wildau'],
+S9:['Flughafen BER','Waßmannsdorf','Adlershof','Schöneweide','Baumschulenweg','Ostkreuz','Alexanderplatz','Friedrichstr.','Hauptbahnhof','Zoologischer Garten','Westkreuz','Spandau'],
+S41:['Ostkreuz','Frankfurter Allee','Storkower Str.','Landsberger Allee','Greifswalder Str.','Prenzlauer Allee','Bornholmer Str.','Gesundbrunnen','Humboldthain','Wedding (S)','Westhafen','Beusselstr.','Jungfernheide (S)','Westkreuz','Halensee','Hohenzollerndamm','Heidelberger Platz (S)','Bundesplatz (S)','Innsbrucker Platz','Schöneberg','Südkreuz','Tempelhof (S)','Hermannstr.','Neukölln (S)','Köllnische Heide','Treptower Park','Ostkreuz'],
+S42:['Ostkreuz','Treptower Park','Köllnische Heide','Neukölln (S)','Hermannstr.','Tempelhof (S)','Südkreuz','Schöneberg','Innsbrucker Platz','Bundesplatz (S)','Heidelberger Platz (S)','Hohenzollerndamm','Halensee','Westkreuz','Jungfernheide (S)','Beusselstr.','Westhafen','Wedding (S)','Humboldthain','Gesundbrunnen','Bornholmer Str.','Prenzlauer Allee','Greifswalder Str.','Landsberger Allee','Storkower Str.','Frankfurter Allee','Ostkreuz'],
+S45:['Flughafen BER','Waßmannsdorf','Adlershof','Schöneweide','Köllnische Heide','Neukölln (S)','Hermannstr.','Tempelhof (S)','Südkreuz'],
+S46:['Königs Wusterhausen','Grünau','Schöneweide','Köllnische Heide','Neukölln (S)','Hermannstr.','Südkreuz','Westkreuz'],
+S47:['Spindlersfeld','Oberspree','Schöneweide','Baumschulenweg','Köllnische Heide','Neukölln (S)','Hermannstr.','Tempelhof (S)','Südkreuz'],
+S75:['Wartenberg','Hohenschönhausen','Landsberger Allee','Ostkreuz','Ostbahnhof'],
+S85:['Pankow','Bornholmer Str.','Prenzlauer Allee','Landsberger Allee','Ostkreuz','Treptower Park','Schöneweide'],
+RE1:['Brandenburg Hbf','Potsdam Hbf','Wannsee','Zoologischer Garten','Hauptbahnhof','Friedrichstr.','Alexanderplatz','Ostbahnhof','Ostkreuz','Erkner','Frankfurt (Oder)'],
+RE2:['Nauen','Falkensee','Spandau','Jungfernheide (S)','Hauptbahnhof','Alexanderplatz','Ostkreuz','Königs Wusterhausen','Cottbus'],
+RE3:['Eberswalde','Bernau','Gesundbrunnen','Hauptbahnhof','Potsdamer Platz','Südkreuz','Jüterbog'],
+RE5:['Wittenberge','Oranienburg','Gesundbrunnen','Hauptbahnhof','Potsdamer Platz','Südkreuz','Wünsdorf-Waldstadt'],
+RE7:['Flughafen BER','Südkreuz','Potsdamer Platz','Hauptbahnhof','Spandau'],
+RB10:['Nauen','Falkensee','Spandau','Jungfernheide (S)','Hauptbahnhof'],
+RB14:['Nauen','Spandau','Hauptbahnhof','Alexanderplatz','Ostkreuz','Flughafen BER'],
+RB24:['Eberswalde','Bernau','Lichtenberg','Ostkreuz','Königs Wusterhausen']};
+
+/* default visible: readable subset incl. U7 and S47 */
+const DEFAULT_ON=['U7','S47','S41','S42','S1','S3','S7'];
+const ALL=Object.keys(lines);
+const groups=[['U-Bahn',ALL.filter(l=>l[0]==='U')],['S-Bahn',ALL.filter(l=>l[0]==='S')],['Regional',ALL.filter(l=>l[0]==='R')]];
+
+/* label tiers: fewer labels when zoomed out */
+const HUBS=['Hauptbahnhof','Alexanderplatz','Friedrichstr.','Ostkreuz','Westkreuz','Südkreuz','Gesundbrunnen','Potsdamer Platz','Zoologischer Garten','Spandau','Ostbahnhof','Schöneweide','Lichtenberg','Flughafen BER','Wannsee'];
+const MAJOR=['Pankow','Rudow','Rathaus Spandau','Alt-Tegel','Alt-Mariendorf','Hermannplatz','Hermannstr.','Neukölln','Warschauer Str.','Köpenick','Wittenau','Osloer Str.','Rathaus Steglitz','Hönow','Ahrensfelde','Spindlersfeld','Mehringdamm','Kottbusser Tor','Nollendorfplatz','Wittenbergplatz','Oranienburg','Potsdam Hbf','Erkner','Strausberg'];
+
+/* ---------- state ---------- */
+const NS='http://www.w3.org/2000/svg';
+const map=document.getElementById('map');
+const el=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let layer=null, trainLayer=null, stationLayer=null;
+const routeShapes={};
+const networkStops={};
+const stationCatalog={};
+let networkSource='local fallback';
+const state={hidden:new Set(ALL.filter(l=>!DEFAULT_ON.includes(l))),trains:[],selected:null,q:'',z:1,tx:0,ty:0,
+  routes:true,names:true,streets:true,live:false,stale:false,lastLive:null,busy:false,countdown:REFRESH_MS/1000,
+  disruptions:[],disruptDismissed:false,disruptCountdown:DISRUPT_REFRESH_MS/1000,disruptBusy:false};
+
+function node(tag,a,parent){const n=document.createElementNS(NS,tag);for(const k in a)n.setAttribute(k,a[k]);(parent||layer).appendChild(n);return n}
+const poly=pts=>pts.map((p,i)=>{const[x,y]=xy(p[0],p[1]);return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)}).join(' ');
+function lineStops(line){return networkStops[line]?.length?networkStops[line]:lines[line]}
+function routePath(stops){
+  return stops.filter(s=>coords[s]).map((s,i)=>{const[x,y]=xy(...coords[s]);return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)}).join(' ');
+}
+function lineStopName(s){return String(s?.name||s?.stop?.name||'').replace(/^(S\+U|U|S|RE|RB)\s+/i,'').replace(/\s+\(Berlin\)$/i,'').trim()}
+function rebuildStaticMap(){buildMap();styleMap();renderMarkers()}
+function shapePath(points){
+  return (points||[]).map((p,i)=>{const lat=Number(p[0]??p.latitude),lon=Number(p[1]??p.longitude);if(!Number.isFinite(lat)||!Number.isFinite(lon))return '';const[x,y]=xy(lat,lon);return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)}).filter(Boolean).join(' ');
+}
+function networkLineName(v){return String(v?.name||v?.line?.name||'').replace(/\s+/g,'').toUpperCase()}
+function extractShape(v){
+  const g=v?.geometry||v?.shape||v?.polyline||v?.path||v?.geojson;
+  const pts=g?.type==='Feature'?g.geometry?.coordinates:g?.type==='LineString'?g.coordinates:g;
+  if(!Array.isArray(pts))return null;
+  const out=pts.map(p=>Array.isArray(p)?(Math.abs(Number(p[0]))>90?[Number(p[1]),Number(p[0])]:[Number(p[0]),Number(p[1])]):[Number(p.latitude),Number(p.longitude)]).filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
+  return out.length>1?out:null;
+}
+function extractStops(v){
+  const raw=v?.stops||v?.stopovers||v?.stations||[];
+  if(!Array.isArray(raw))return [];
+  return raw.map(s=>{
+    const o=s?.stop||s?.station||s;
+    if(typeof o==='string'||typeof o==='number'){const c=stationCatalog[String(o)];if(!c)return '';coords[c.name]=[c.lat,c.lon];return c.name}
+    const name=lineStopName(o); const lat=Number(o?.location?.latitude??o?.latitude),lon=Number(o?.location?.longitude??o?.longitude);
+    if(name&&Number.isFinite(lat)&&Number.isFinite(lon)){coords[name]=[lat,lon];return name} return name;
+  }).filter(Boolean);
+}
+async function fetchShape(id){
+  if(!id)return null;
+  try{const r=await fetchApi('shapes/'+encodeURIComponent(id));if(!r.ok)return null;return extractShape(await r.json())}catch(e){return null}
+}
+async function loadNetwork(){
+  try{
+    const [lr,sr]=await Promise.all([
+      fetchApi('lines?variants=true&mode=train&pretty=false'),
+      fetchApi('stations?pretty=false')
+    ]);
+    if(!lr.ok)throw Error('network');
+    if(sr.ok){const sp=await sr.json();const stations=Array.isArray(sp)?sp:Object.values(sp||{});stations.forEach(st=>{const loc=st.location||{};const lat=Number(loc.latitude),lon=Number(loc.longitude);if(Number.isFinite(lat)&&Number.isFinite(lon)){const names=[st.id,...(st.stops||[]).map(x=>x.id)].filter(Boolean);names.forEach(id=>stationCatalog[String(id)]={name:lineStopName(st),lat,lon})}})}
+    const payload=await lr.json();
+    const records=Array.isArray(payload)?payload:(Array.isArray(payload.lines)?payload.lines:Object.values(payload||{}).filter(v=>v&&typeof v==='object'));
+    let found=0;
+    for(const target of ALL){
+      const rec=records.find(x=>networkLineName(x)===target);if(!rec)continue;
+      const stops=[];const variants=Array.isArray(rec.variants)?rec.variants:[rec];
+      for(const variant of variants){const got=extractStops({stops:Array.isArray(variant)?variant:variant.stops||variant.stopovers||[]});if(got.length>stops.length)stops.splice(0,stops.length,...got)}
+      const direct=extractStops(rec);if(direct.length>stops.length)stops.splice(0,stops.length,...direct);
+      if(stops.length>1)networkStops[target]=stops;
+      const ids=[rec.id,rec.shapeId,rec.line?.id].filter(Boolean);
+      for(const id of ids){const shape=await fetchShape(id);if(shape){routeShapes[target]=shapePath(shape);break}}
+      if(networkStops[target]?.length||routeShapes[target])found++;
+    }
+    if(found){networkSource='VBB network data';rebuildStaticMap();el('mapStatus').textContent=state.live?el('mapStatus').textContent:'VBB network loaded'}
+  }catch(err){networkSource='local fallback'}
+}
+
+/* ---------- service disruptions / construction notices ---------- */
+function remarkKey(r){return String(r?.id||r?.code||'')+'|'+String(r?.summary||r?.text||'').slice(0,120)}
+function remarkSeverity(r){
+  const t=String(r?.type||'').toLowerCase();
+  if(t==='warning'||t==='status')return 'warning';
+  return 'info';
+}
+function isConstructionLike(r){
+  const s=String(r?.summary||r?.text||'').toLowerCase();
+  return /bauarbeit|baustelle|construction|gesperrt|ersatzverkehr|umleitung|ausfall|störung|stoerung|disrupt|closed|closure|halt entfällt|entfällt/.test(s);
+}
+async function fetchStopRemarks(stop){
+  try{
+    const r=await fetchApi(`stops/${encodeURIComponent(stop.id)}/departures?duration=30&remarks=true&pretty=false`);
+    if(!r.ok)return [];
+    const p=await r.json();
+    const deps=Array.isArray(p)?p:(p.departures||[]);
+    const out=[];
+    deps.forEach(d=>{
+      (d.remarks||[]).forEach(rem=>{
+        if(remarkSeverity(rem)!=='warning'&&!isConstructionLike(rem))return;
+        const text=String(rem.summary||rem.text||'').trim();
+        if(!text)return;
+        out.push({key:remarkKey(rem),text,line:String(d.line?.name||'').toUpperCase(),stop:stop.name});
+      });
+    });
+    return out;
+  }catch(e){return []}
+}
+async function loadDisruptions(){
+  if(state.disruptBusy)return;state.disruptBusy=true;
+  try{
+    const batches=await Promise.all(DISRUPT_STOPS.map(fetchStopRemarks));
+    const merged=new Map();
+    batches.flat().forEach(d=>{
+      if(!merged.has(d.key))merged.set(d.key,{text:d.text,lines:new Set(),stops:new Set()});
+      const m=merged.get(d.key);
+      if(d.line)m.lines.add(d.line);
+      m.stops.add(d.stop);
+    });
+    state.disruptions=[...merged.values()].map(m=>({text:m.text,lines:[...m.lines],stops:[...m.stops]}));
+  }catch(e){
+    /* keep previous disruptions on failure; do not fabricate */
+  }finally{
+    state.disruptBusy=false;state.disruptCountdown=DISRUPT_REFRESH_MS/1000;renderDisruptions();
+  }
+}
+function renderDisruptions(){
+  const bar=el('disruptionBar'),content=el('disruptionContent'),refresh=el('disruptionRefresh');
+  if(state.disruptDismissed){bar.classList.add('hidden');return}
+  bar.classList.remove('hidden');
+  if(!state.disruptions.length){
+    content.innerHTML='<div class="db-empty">No active construction or disruption notices reported at major hubs right now.</div>';
+  }else{
+    content.innerHTML=state.disruptions.slice(0,20).map(d=>
+      `<div class="db-item">${d.lines.length?'<b>'+d.lines.map(esc).join('/')+'</b>':''}${esc(d.text)}${d.stops.length?' <span style="color:#a3823a">('+esc(d.stops.slice(0,2).join(', '))+')</span>':''}</div>`
+    ).join('');
+  }
+  refresh.textContent=`checked ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · next in ${Math.max(0,Math.round(state.disruptCountdown))}s`;
+}
+
+/* ---------- trajectory (full trip stopovers) ---------- */
+const tripCache=new Map();
+async function fetchTrip(tripId){
+  if(!tripId)return null;
+  if(tripCache.has(tripId))return tripCache.get(tripId);
+  try{
+    const r=await fetchApi(`trips/${encodeURIComponent(tripId)}?stopovers=true&remarks=true&polyline=false&pretty=false`);
+    if(!r.ok)throw new Error('http');
+    const p=await r.json();
+    const trip=p.trip||p;
+    tripCache.set(tripId,trip);
+    return trip;
+  }catch(e){return null}
+}
+function renderTrajectory(stopovers,currentName){
+  if(!stopovers||!stopovers.length)return '<p>No detailed stopover list reported for this trip.</p>';
+  let passed=true;
+  const rows=stopovers.map(s=>{
+    const name=lineStopName(s.stop||s);
+    const isCurrent=name===currentName;
+    if(isCurrent)passed=false;
+    const when=s.arrival||s.plannedArrival||s.departure||s.plannedDeparture;
+    let etaTxt='—';let late=false;
+    if(typeof when==='string'){
+      const ms=Date.parse(when);
+      if(Number.isFinite(ms)){const min=Math.round((ms-Date.now())/60000);etaTxt=min<=0?'due':min+' min'}
+    }
+    const delaySec=s.arrivalDelay??s.departureDelay;
+    if(Number.isFinite(Number(delaySec))&&Number(delaySec)>=60){late=true;etaTxt+=' (+'+Math.round(Number(delaySec)/60)+')'}
+    return `<div class="trajectory-row${isCurrent?' current':''}"${passed&&!isCurrent?' style="opacity:.5"':''}>
+      <span class="trajectory-dot"></span><span class="trajectory-name">${esc(name)}</span>
+      <span class="trajectory-eta${late?' late':''}">${etaTxt}</span></div>`;
+  });
+  return `<div class="trajectory">${rows.join('')}</div>`;
+}
+function highlightRoute(line){
+  layer.querySelectorAll('.route,.route-case').forEach(n=>{
+    n.classList.remove('active','dimmed');
+    if(!line)return;
+    if(n.dataset.line===line)n.classList.add('active');else n.classList.add('dimmed');
+  });
+}
+
+/* ---------- build static map ---------- */
+function buildMap(){
+  map.innerHTML='';
+  const view=document.createElementNS(NS,'g');view.id='view';map.appendChild(view);layer=view;
+  node('rect',{x:-2000,y:-2000,width:5000,height:5000,fill:'#d7e9f0'});
+  node('path',{class:'city',d:poly(BORDER)+'Z'});
+  PARKS.forEach(p=>node('path',{class:'park',d:poly(p)+'Z'}));
+  LAKES.filter(l=>l.p.length).forEach(l=>node('path',{class:'lake',d:poly(l.p)+'Z'}));
+  node('path',{class:'river',id:'havel',d:poly(HAVEL),'stroke-width':7});
+  node('path',{class:'river',id:'spree',d:poly(SPREE),'stroke-width':5});
+  node('path',{class:'river',id:'dahme',d:poly(DAHME),'stroke-width':4});
+  node('path',{class:'river',id:'landwehrkanal',d:poly(LANDWEHRKANAL),'stroke-width':2.6});
+  const sg=node('g',{id:'streets'});
+  STREETS.forEach(s=>{
+    const d=poly(s.p);
+    node('path',{class:'street-case',d,'stroke-width':s.w+1.2},sg);
+    node('path',{class:'street',d,'stroke-width':s.w},sg);
+  });
+  DISTRICTS.forEach(([n,lat,lon])=>{
+    const[x,y]=xy(lat,lon);
+    const lines=n.split('\n');
+    lines.forEach((ln,i)=>{
+      const t=node('text',{class:'district',x,y:y+i*10,'font-size':9});
+      t.textContent=ln;
+    });
+  });
+
+  const rg=node('g',{id:'routes'});
+  ALL.forEach(line=>{
+    const d=routeShapes[line]||routePath(lineStops(line));if(!d)return;
+    const w=line[0]==='U'?2.5:line[0]==='S'?2.1:1.8;
+    node('path',{class:'route-case',d,'stroke-width':w+1.8,'data-line':line},rg);
+    const p=node('path',{class:'route',d,stroke:colors[line]||'#5d7280','stroke-width':w,'data-line':line},rg);
+    if(line[0]==='R')p.setAttribute('stroke-dasharray','8 6');
+  });
+
+  stationLayer=node('g',{id:'stations'});
+  const stationLines={};ALL.forEach(l=>lineStops(l).forEach(s=>(stationLines[s]??=[]).push(l)));
+  const used=new Set();ALL.forEach(l=>lineStops(l).forEach(s=>used.add(s)));
+  const seen=new Set();
+  used.forEach(name=>{
+    const c=coords[name];if(!c)return;
+    const key=c[0].toFixed(4)+','+c[1].toFixed(4);if(seen.has(key))return;seen.add(key);
+    const[x,y]=xy(...c);
+    const hub=HUBS.includes(name), tier=hub?0:MAJOR.includes(name)?1:2;
+    const g=node('g',{'data-tier':tier,'data-lines':(stationLines[name]||[]).join(',')},stationLayer);
+    node('circle',{class:hub?'station hub':'station',cx:x,cy:y,r:hub?5.4:3.2,'stroke-width':hub?2.2:1.5},g);
+    const t=node('text',{class:'label',x:x+8,y:y-7,'font-size':hub?13:12},g);
+    t.textContent=name.replace(/\s*\(S1?\)$/,'');
+    const bb=node('rect',{class:'station-label-bg',x:x+4,y:y-18,width:Math.max(42,name.length*6.2),height:17,rx:4},g);
+    g.insertBefore(bb,t);
+  });
+
+  trainLayer=node('g',{id:'trains'});
+  applyView();
+}
+
+/* ---------- view / zoom ---------- */
+function clampView(){
+  const pad=180;
+  const minX=-(1000*state.z-1000)-pad, minY=-(700*state.z-700)-pad;
+  state.tx=Math.min(pad,Math.max(minX,state.tx));
+  state.ty=Math.min(pad,Math.max(minY,state.ty));
+}
+function applyView(){
+  clampView();
+  layer.setAttribute('transform',`translate(${state.tx.toFixed(2)} ${state.ty.toFixed(2)}) scale(${state.z.toFixed(4)})`);
+  const k=1/state.z;
+  /* keep strokes, markers, dots and text at constant on-screen size */
+  stationLayer.querySelectorAll('g').forEach(g=>{
+    const active=(g.dataset.lines||'').split(',').some(l=>!state.hidden.has(l));
+    g.style.display=active?'':'none';
+    if(!active)return;
+    const tier=+g.dataset.tier, c=g.querySelector('circle'), t=g.querySelector('text'), bg=g.querySelector('.station-label-bg');
+    const hub=tier===0;
+    const dot=(hub?5.4:3.2)*k;
+    c.setAttribute('r',dot.toFixed(2));
+    const visible=tier===0?state.z>=1.3:(tier===1?state.z>=1.8:state.z>=2.6);
+    const font=(hub?13:12)*k;
+    t.setAttribute('font-size',font.toFixed(2));
+    t.setAttribute('x',(+c.getAttribute('cx')+8*k).toFixed(2));
+    t.setAttribute('y',(+c.getAttribute('cy')-7*k).toFixed(2));
+    t.style.display=(state.names&&visible)?'':'none';
+    t.style.strokeWidth=(5*k)+'px';
+    if(bg){
+      const w=Math.max(52,t.textContent.length*7.2)*k;
+      bg.setAttribute('x',(+c.getAttribute('cx')+4*k).toFixed(2));
+      bg.setAttribute('y',(+c.getAttribute('cy')-20*k).toFixed(2));
+      bg.setAttribute('width',w.toFixed(2));
+      bg.setAttribute('height',(20*k).toFixed(2));
+      bg.setAttribute('rx',(4*k).toFixed(2));
+      bg.style.display=(state.names&&visible)?'':'none';
+    }
+  });
+  layer.querySelectorAll('.district').forEach(t=>{t.setAttribute('font-size',(9*k).toFixed(2));t.style.display=state.z<=1.8?'':'none';t.style.strokeWidth=(3*k)+'px'});
+  el('havel').setAttribute('stroke-width',(7).toFixed(1));
+  trainLayer.querySelectorAll('.train').forEach(g=>{
+    g.setAttribute('transform',`translate(${g.dataset.x} ${g.dataset.y}) scale(${k.toFixed(4)})`);
+  });
+  el('zoomLabel').textContent=state.z.toFixed(1)+'×';
+}
+function zoom(f,cx=500,cy=350){
+  const old=state.z;
+  state.z=Math.max(0.9,Math.min(7,state.z*f));
+  if(state.z===old)return;
+  state.tx=cx-(cx-state.tx)*state.z/old;
+  state.ty=cy-(cy-state.ty)*state.z/old;
+  applyView();
+}
+const toSvg=e=>{const r=map.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*1000,y:(e.clientY-r.top)/r.height*700}};
+let drag=null;
+map.addEventListener('pointerdown',e=>{if(e.target.closest('.train'))return;const p=toSvg(e);drag={px:p.x,py:p.y,tx:state.tx,ty:state.ty};map.setPointerCapture(e.pointerId);map.classList.add('drag')});
+map.addEventListener('pointermove',e=>{if(!drag)return;const p=toSvg(e);state.tx=drag.tx+(p.x-drag.px);state.ty=drag.ty+(p.y-drag.py);applyView()});
+const endDrag=()=>{drag=null;map.classList.remove('drag')};
+map.addEventListener('pointerup',endDrag);map.addEventListener('pointercancel',endDrag);map.addEventListener('pointerleave',endDrag);
+map.addEventListener('wheel',e=>{e.preventDefault();const p=toSvg(e);zoom(e.deltaY<0?1.18:1/1.18,p.x,p.y)},{passive:false});
+map.addEventListener('dblclick',e=>{const p=toSvg(e);zoom(1.6,p.x,p.y)});
+
+/* ---------- controls ---------- */
+function renderLineBox(){
+  const b=el('lineBox');b.innerHTML='';
+  groups.forEach(([title,names])=>{
+    const g=document.createElement('div');g.className='group';
+    const allOn=names.every(n=>!state.hidden.has(n));
+    g.innerHTML=`<div class="group-title"><span>${title}</span><span class="small-actions"><button data-toggle-lines="1" aria-pressed="${allOn}" aria-label="${allOn?'Hide':'Show'} all ${title} lines">${allOn?'None':'All'}</button></span></div><div class="chips"></div>`;
+    const chips=g.querySelector('.chips');
+    names.forEach(n=>{
+      const on=!state.hidden.has(n);
+      const btn=document.createElement('button');
+      btn.className='chip'+(on?' on':'');btn.style.setProperty('--c',colors[n]||'#5d7280');
+      btn.setAttribute('aria-pressed',String(on));btn.textContent=n;
+      btn.onclick=()=>{on?state.hidden.add(n):state.hidden.delete(n);render()};
+      chips.appendChild(btn);
+    });
+    g.querySelector('[data-toggle-lines]').onclick=()=>{
+      const turnOn=!names.every(n=>!state.hidden.has(n));
+      names.forEach(n=>turnOn?state.hidden.delete(n):state.hidden.add(n));
+      render();
+    };
+    b.appendChild(g);
+  });
+  el('lineCount').textContent=`${ALL.length-state.hidden.size} of ${ALL.length} lines shown`;
+}
+function styleMap(){
+  layer.querySelectorAll('[data-line]').forEach(n=>{n.style.display=(state.routes&&!state.hidden.has(n.dataset.line))?'':'none'});
+  const streetLayer=el('map').querySelector('#streets');
+  if(streetLayer)streetLayer.style.display=state.streets?'':'none';
+  applyView();
+}
+
+/* ---------- live data ---------- */
+const productOf=v=>String(v?.line?.product||v?.product||'').toLowerCase();
+const isRail=v=>{const p=productOf(v),n=String(v?.line?.name||v?.line?.label||'').toUpperCase();
+  return ['subway','suburban','regional','express','regionalexp'].includes(p)||/^(U|S|RE|RB)\s?\d/.test(n)};
+function delayOf(v){
+  const s=v?.nextStopovers?.[0];
+  let raw=v?.delay??s?.arrivalDelay??s?.departureDelay;
+  if(raw==null||raw==='')return 0;
+  let d=Number(raw);if(!Number.isFinite(d))return 0;
+  /* HAFAS delay values are seconds; tolerate feeds that already expose minutes. */
+  if(Math.abs(d)>=60)d=d/60;
+  return Math.max(0,Math.round(d));
+}
+function etaOf(v){const s=v?.nextStopovers?.[0];const t=s?.arrival||s?.plannedArrival||s?.departure;
+  if(typeof t==='string'){const ms=Date.parse(t);if(Number.isFinite(ms))return Math.round((ms-Date.now())/60000)}return null}
+function normalize(v,i){
+  const loc=v.location||v.position||{};
+  const lat=Number(loc.latitude??loc.lat),lon=Number(loc.longitude??loc.lon);
+  if(!Number.isFinite(lat)||!Number.isFinite(lon))return null;
+  const line=String(v?.line?.name||v?.line?.label||'Rail').replace(/\s+/g,'').toUpperCase();
+  const s=v?.nextStopovers?.[0];
+  return{id:String(v.tripId||v.trip||v.id||i),line,
+    destination:String(v.direction||v?.line?.direction||v?.trip?.direction||'Unknown destination'),
+    next:String(s?.stop?.name||s?.stop?.station?.name||'Next stop not reported'),
+    lat,lon,delay:delayOf(v),eta:etaOf(v)};
+}
+function visibleTrains(){
+  const q=state.q.trim().toLowerCase();
+  return state.trains.filter(t=>!state.hidden.has(t.line)&&(!q||[t.line,t.destination,t.next].some(v=>v.toLowerCase().includes(q))));
+}
+function renderTrains(){
+  const list=el('trainList'),a=visibleTrains();
+  el('trainSub').textContent=`${a.length} shown · ${state.trains.length} live rail vehicles`;
+  list.innerHTML='';
+  if(!a.length){list.innerHTML='<div class="empty">No trains match the selected lines or search. Enable more lines on the left.</div>';return}
+  a.slice().sort((x,y)=>(x.eta??999)-(y.eta??999)).slice(0,120).forEach(t=>{
+    const row=document.createElement('button');
+    row.className='train-row'+(state.selected===t.id?' selected':'');
+    row.innerHTML=`<span class="badge" style="--c:${colors[t.line]||'#5d7280'}">${esc(t.line)}</span>
+      <span><b>${esc(t.destination)}</b><small>next: ${esc(t.next)}</small></span>
+      <em class="eta${t.delay?' late':''}">${t.eta==null?'—':t.eta<=0?'due':t.eta+' min'}${t.delay?' +'+t.delay:''}</em>`;
+    row.onclick=()=>select(t.id);
+    list.appendChild(row);
+  });
+}
+function renderMarkers(){
+  trainLayer.innerHTML='';
+  const a=visibleTrains(),k=1/state.z;
+  a.forEach(t=>{
+    const[x,y]=xy(t.lat,t.lon);
+    const g=node('g',{class:'train',transform:`translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${k.toFixed(4)})`,tabindex:'0','role':'button','aria-label':`${t.line} to ${t.destination}, next stop ${t.next}`},trainLayer);
+    g.dataset.id=t.id;g.dataset.x=x.toFixed(2);g.dataset.y=y.toFixed(2);
+    if(state.selected===t.id)node('circle',{class:'halo',cx:0,cy:0,r:13},g);
+    node('circle',{class:'body',cx:0,cy:0,r:9,fill:colors[t.line]||'#5d7280'},g);
+    if(t.delay)node('circle',{class:'late',cx:7,cy:-7,r:3.4},g);
+    const tx=node('text',{x:0,y:0},g);tx.textContent=t.line;
+    const title=node('title',{},g);title.textContent=`${t.line} → ${t.destination}\nnext: ${t.next}${t.eta==null?'':' · '+(t.eta<=0?'due':t.eta+' min')}`;
+    g.addEventListener('click',e=>{e.stopPropagation();select(t.id)});
+    g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(t.id)}});
+  });
+  el('mapStatus').textContent=state.live
+    ?`${a.length} live trains · ${new Date(state.lastLive).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`
+    :(state.stale?'Last known positions · feed unavailable':'Live positions unavailable');
+}
+function select(id){
+  state.selected=id;
+  const t=state.trains.find(x=>x.id===id);
+  if(t){
+    highlightRoute(t.line);
+    el('detail').innerHTML=`<h3><span class="badge" style="width:42px;--c:${colors[t.line]||'#5d7280'}">${esc(t.line)}</span>${esc(t.destination)}</h3>
+      <div class="kv">
+        <div><span>Next station</span><b>${esc(t.next)}</b></div>
+        <div><span>ETA next stop</span><b>${t.eta==null?'not reported':t.eta<=0?'arriving now':'in '+t.eta+' min'}</b></div>
+        <div><span>Delay</span><b>${t.delay?'+'+t.delay+' min':'on time'}</b></div>
+        <div><span>Position</span><b>${t.lat.toFixed(4)}, ${t.lon.toFixed(4)}</b></div>
+      </div>
+      <p>Live position from the VBB real-time radar feed, refreshed every ${REFRESH_MS/1000} seconds.</p>
+      <p style="margin-top:10px;font-weight:900;color:var(--ink);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Trajectory</p>
+      <div id="trajectoryBox"><p>Loading full stopover list…</p></div>`;
+    fetchTrip(t.id).then(trip=>{
+      const box=document.getElementById('trajectoryBox');
+      if(!box||state.selected!==id)return;
+      const stopovers=trip?.stopovers;
+      box.innerHTML=renderTrajectory(stopovers,t.next);
+    });
+  }else{
+    highlightRoute(null);
+  }
+  renderTrains();renderMarkers();
+}
+function render(){renderLineBox();styleMap();renderTrains();renderMarkers()}
+
+async function load(){
+  if(state.busy)return;state.busy=true;
+  el('feedText').textContent='updating…';
+  let lastErr=null;
+  /* Try the primary VBB host first, then fall back to the BVG mirror (same underlying VBB
+     realtime data) if the primary is down. v6.vbb.transport.rest has had known outages where
+     its upstream HAFAS backend returns 502/503 for all data endpoints. */
+  for(let attempt=0;attempt<RADAR_HOSTS.length;attempt++){
+    const hostIdx=(activeHost+attempt)%RADAR_HOSTS.length;
+    const url=RADAR_HOSTS[hostIdx]+'/'+RADAR_QS+'&_='+Date.now();
+    try{
+      const r=await fetch(url,{cache:'no-store'});
+      if(!r.ok)throw new Error('http '+r.status);
+      const p=await r.json();
+      const raw=Array.isArray(p)?p:(p.movements||p.vehicles||p.results||[]);
+      const t=raw.filter(isRail).map(normalize).filter(Boolean);
+      if(!t.length)throw new Error('empty');
+      state.trains=t;state.live=true;state.stale=false;state.lastLive=Date.now();
+      activeHost=hostIdx;
+      const hostLabel=hostIdx===0?'':' (via BVG mirror)';
+      el('feedText').textContent='live · every '+(REFRESH_MS/1000)+'s'+hostLabel;
+      el('feedDot').classList.remove('bad');el('mapDot').classList.remove('bad');
+      lastErr=null;
+      break;
+    }catch(err){lastErr=err}
+  }
+  if(lastErr){
+    state.live=false;state.stale=state.trains.length>0;
+    el('feedText').textContent=state.stale?'last known positions · feed unavailable':'live feed unavailable (VBB/BVG both unreachable)';
+    el('feedDot').classList.add('bad');el('mapDot').classList.add('bad');
+    if(!state.trains.length)state.trains=[];
+  }
+  state.busy=false;state.countdown=REFRESH_MS/1000;render();
+}
+function demo(){return[
+ {id:'d1',line:'U7',destination:'Rathaus Spandau',next:'Mehringdamm',lat:52.494,lon:13.388,delay:0,eta:2},
+ {id:'d2',line:'S47',destination:'Spindlersfeld',next:'Köllnische Heide',lat:52.463,lon:13.462,delay:1,eta:4},
+ {id:'d3',line:'S41',destination:'Ring',next:'Ostkreuz',lat:52.503,lon:13.469,delay:0,eta:3},
+ {id:'d4',line:'S3',destination:'Erkner',next:'Köpenick',lat:52.458,lon:13.577,delay:2,eta:6},
+ {id:'d5',line:'RE1',destination:'Frankfurt (Oder)',next:'Ostbahnhof',lat:52.511,lon:13.435,delay:0,eta:5}]}
+
+/* ---------- ui wiring ---------- */
+el('zoomIn').onclick=()=>zoom(1.35);
+el('zoomOut').onclick=()=>zoom(1/1.35);
+el('reset').onclick=()=>{state.z=1;state.tx=0;state.ty=0;applyView()};
+el('toggleRoutes').onclick=()=>{state.routes=!state.routes;el('toggleRoutes').style.opacity=state.routes?1:.55;styleMap()};
+el('toggleNames').onclick=()=>{state.names=!state.names;el('toggleNames').style.opacity=state.names?1:.55;applyView()};
+el('toggleStreets').onclick=()=>{state.streets=!state.streets;el('toggleStreets').style.opacity=state.streets?1:.55;styleMap()};
+el('search').oninput=e=>{state.q=e.target.value;renderTrains();renderMarkers()};
+el('refresh').onclick=load;
+el('disruptionClose').onclick=()=>{state.disruptDismissed=true;el('disruptionBar').classList.add('hidden')};
+window.addEventListener('keydown',e=>{if(e.key==='+'||e.key==='=')zoom(1.3);if(e.key==='-')zoom(1/1.3);if(e.key==='0')el('reset').click()});
+
+setInterval(()=>{
+  state.countdown--;
+  el('updated').textContent=state.live
+    ?`updated ${new Date(state.lastLive).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})} · next in ${Math.max(0,state.countdown)}s`
+    :`retrying in ${Math.max(0,state.countdown)}s`;
+  if(state.countdown<=0)load();
+  state.disruptCountdown--;
+  if(!state.disruptDismissed)el('disruptionRefresh').textContent=`next check in ${Math.max(0,Math.round(state.disruptCountdown))}s`;
+  if(state.disruptCountdown<=0)loadDisruptions();
+},1000);
+
+buildMap();render();loadNetwork();load();loadDisruptions();
+})();
+</script>
+</body>
+</html>
