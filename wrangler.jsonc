@@ -1,0 +1,9 @@
+{
+  // Static site on Cloudflare Workers: everything in ./public is served as-is,
+  // public/index.html at "/". No Worker script needed.
+  "name": "spot",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./public"
+  }
+}

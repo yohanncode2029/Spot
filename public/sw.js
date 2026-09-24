@@ -1,8 +1,8 @@
 /* Spot service worker: caches the app shell so the home-screen app opens fast and
    installs on Android. Live data (train APIs, map tiles) is never cached — always network. */
-const CACHE = 'spot-v1';
+const CACHE = 'spot-v2';   /* v2: page moved to index.html (served at ./) */
 const SHELL = [
-  './Spot%20(1).html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png',
+  './', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png',
   'https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js',
   'https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css',
 ];
