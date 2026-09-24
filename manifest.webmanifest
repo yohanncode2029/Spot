@@ -1,0 +1,16 @@
+{
+  "name": "Spot — Berlin rail, live",
+  "short_name": "Spot",
+  "description": "Live Berlin trains on a map, plus the next S42/S47 at Neukölln.",
+  "start_url": "./Spot%20(1).html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f5f7",
+  "theme_color": "#f5f5f7",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
